@@ -30,36 +30,41 @@ void Game::Init() {
         meshes[mesh->GetMeshID()] = mesh;
     }
     {
-        Mesh* mesh = new Mesh("en1");
-        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::HW1, "models"), "enemy1.obj");
+        Mesh* mesh = new Mesh("player");
+        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::HW1, "models"), "player.obj");
+        meshes[mesh->GetMeshID()] = mesh;
+    }
+    {
+        Mesh* mesh = new Mesh("enemy");
+        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::HW1, "models"), "enemy2.obj");
         meshes[mesh->GetMeshID()] = mesh;
     }
 
-    auto floor = new Entity;
+    auto floor = new Entity();
     floor->addMesh(meshes["quad"], 100);
     floor->setSize(glm::vec2(1000));
     floor->setColor({ 0.498, 0.509, 0.643 });
     props.emplace_back(floor);
 
     for (int i = 0; i < 10; i++) {
-        auto prop = new Entity;
+        auto prop = new Entity(glm::vec2(i * 100, 200));
         prop->addMesh(meshes["quad"], 99);
         prop->setSize(glm::vec2(100));
         prop->setColor({ 0.423, 0.4, 0.921 });
-        prop->setPosition(glm::vec2(i * 100, 200));
         prop->setCollider(new AABB);
         prop->setSize({ 10, 10 });
         props.emplace_back(prop);
     }
 
-    player = new Player({ 0, 0 });
-    player->addMesh(meshes["quad"], 50);
+    player = new NPC({ 0, 0 });
+    player->addMesh(meshes["player"], 50);
     player->setColor({ 0, 0, 1 });
     player->setCollider(new Circle);
     player->setSize(glm::vec2(50));
+    player->addWeapon(new Fists);
 
-    Enemy* e = new Enemy({ 100, 100 });
-    e->addMesh(meshes["quad"], 1);
+    NPC* e = new NPC({ 100, 100 });
+    e->addMesh(meshes["enemy"], 1);
     e->setCollider(new AABB);
     e->setSize(glm::vec2(50));
     enemies.emplace_back(e);
@@ -77,6 +82,8 @@ void Game::Update(float deltaTimeSeconds) {
     for (auto en : enemies) {
         // UPDATE HEALTHBARS
         en->Render(shaders["SimpleColor"], GetSceneCamera());
+        en->setDirection(player->getPosition() - en->getPosition());
+        en->goForward(deltaTimeSeconds);
     }
     player->Render(shaders["SimpleColor"], GetSceneCamera());
     
@@ -85,19 +92,15 @@ void Game::Update(float deltaTimeSeconds) {
     
     // RenderMesh(meshes["quad"], glm::vec3(-200, .5f, 0), glm::vec3(50.f));
     // RenderMesh(meshes["circle"], glm::vec3(1, 200.5f, 0), glm::vec3(50.f, 100, 50));
-
-
-    
 }
 void Game::OnInputUpdate(float deltaTime, int mods) {
     // if WASD check collision
-    // TODO if no collision then move player and update camera
     {
         auto pos = player->getPosition();
         if (window->KeyHold(GLFW_KEY_W))
-            player->addDisplacement({ 0, 10 });
+            player->addToPosition({ 0, 10 });
         if (window->KeyHold(GLFW_KEY_S))
-            player->addDisplacement({ 0, -10 });
+            player->addToPosition({ 0, -10 });
         for (auto prop : props)
             if (prop->checkCollision(player)) {
                 player->setPosition(pos);
@@ -109,9 +112,9 @@ void Game::OnInputUpdate(float deltaTime, int mods) {
         auto pos = player->getPosition();
 
         if (window->KeyHold(GLFW_KEY_A))
-            player->addDisplacement({ -10, 0 });
+            player->addToPosition({ -10, 0 });
         if (window->KeyHold(GLFW_KEY_D))
-            player->addDisplacement({ 10, 0 });
+            player->addToPosition({ 10, 0 });
         for (auto prop : props)
             if (prop->checkCollision(player)) {
                 player->setPosition(pos);
@@ -122,6 +125,7 @@ void Game::OnInputUpdate(float deltaTime, int mods) {
     auto cam = GetSceneCamera();
     cam->SetPosition({ player->getPosition(), 50 });
     cam->Update();
+
 }
 void Game::OnKeyPress(int key, int mods) {}
 void Game::OnKeyRelease(int key, int mods) {}
@@ -131,6 +135,8 @@ void Game::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY) {
 }
 void Game::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods) {
     // shoot and calculate direction
+    if (button - 1 == GLFW_MOUSE_BUTTON_LEFT)
+        player->shoot(this);
 }
 void Game::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) {}
 void Game::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) { /* maybe use to change player weapon? */ }

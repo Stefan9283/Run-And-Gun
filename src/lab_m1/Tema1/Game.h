@@ -1,8 +1,7 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "Movable/Player.h"
-#include "Movable/Enemy.h"
+#include "Movable/Entity.h"
 
 class Game : public gfxc::SimpleScene
 {
@@ -11,6 +10,12 @@ public:
     ~Game() override;
 
     void Init() override;
+
+    // TODO
+    NPC* player;
+    std::vector<NPC*> enemies;
+    std::vector<Entity*> props;
+    std::vector<Projectile*> projectiles;
 
 private:
     void FrameStart() override;
@@ -25,9 +30,4 @@ private:
     void OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) override;
     void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
     void OnWindowResize(int width, int height) override;
-
-    // TODO
-    Player* player;
-    std::vector<Enemy*> enemies;
-    std::vector<Entity*> props;
 };

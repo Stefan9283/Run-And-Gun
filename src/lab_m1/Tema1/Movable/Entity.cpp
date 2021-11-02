@@ -1,4 +1,4 @@
-#include "Movable.h"
+#include "Entity.h"
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -7,41 +7,45 @@
 glm::vec2 Entity::getPosition() {
     return pos;
 }
+void Entity::addToPosition(glm::vec2 displacement) {
+    this->pos += displacement;
+}
 void Entity::setPosition(glm::vec2 pos) {
     this->pos = pos;
 }
 void Entity::setDirection(glm::vec2 direction = glm::vec2(-1, 0)) {
     this->dir = glm::normalize(direction);
 }
+glm::vec2 Entity::getDirection() {
+    return dir;
+}
 void Entity::setSize(glm::vec2 scale) {
     this->scale = scale;
     if (collider) collider->resize(scale);
 }
+Entity::Entity(glm::vec2 pos) {
+    this->pos = pos;
+}
 void Entity::setColor(glm::vec3 color) {
     this->color = color;
-}
-void Entity::setVelocity(float velocity) {
-    this->velocity = velocity;
 }
 void Entity::setCollider(Collider* col) {
     delete collider;
     collider = col;
     col->resize(scale);
 }
+void Entity::goForward(float dt) {
+    pos += velocity * dir * dt;
+}
 Collider* Entity::getCollider() {
     return collider;
 }
-void Entity::addDisplacement(glm::vec2 disp) {
-    pos += disp * velocity;
-}
-
 void Entity::addMesh(Mesh* mesh, float layer) {
     meshes.push_back({ mesh, layer });
     std::sort(meshes.begin(), meshes.end(), [](std::pair<Mesh*, float>& a, std::pair<Mesh*, float>& b) {
         return a.second < b.second;
     });
 }
-
 void Entity::Render(Shader* s, gfxc::Camera* camera) {
     s->Use();
     
@@ -59,8 +63,25 @@ void Entity::Render(Shader* s, gfxc::Camera* camera) {
         mesh.first->Render();
     }
 }
-
 bool Entity::checkCollision(Entity* e) {
     if (!collider) return false;
-    collider->checkCollision(pos, e->getPosition(), e->getCollider());
+    return collider->checkCollision(pos, e->getPosition(), e->getCollider());
+}
+
+NPC::NPC(glm::vec2 pos) {
+    setPosition(pos);
+    weapon = nullptr;
+}
+void NPC::addWeapon(Weapon* weapon) {
+    delete this->weapon;
+    this->weapon = weapon;
+    weapon->setParent(this);
+}
+std::vector<Projectile*> NPC::shoot(Game* game) {
+    return weapon->shoot(game);
+}
+
+Projectile::Projectile(Weapon* parent, float remainingTime) {
+    this->remainingTime = remainingTime;
+    source = parent;
 }
