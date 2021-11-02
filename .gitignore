@@ -1,0 +1,6 @@
+build*
+/**/bin
+/**/.vs
+/**/obj
+components_hidden
+cmake-build-debug
