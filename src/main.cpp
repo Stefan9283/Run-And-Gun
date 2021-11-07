@@ -22,7 +22,6 @@
     PREFER_DISCRETE_GPU_AMD;
 #endif
 
-#include <lab_m1/Tema1/Game.h>
 
 std::string GetParentDir(const std::string &filePath)
 {

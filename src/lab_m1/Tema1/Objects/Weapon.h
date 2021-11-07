@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <chrono>
 
 class NPC;
 class Projectile;
@@ -9,8 +10,10 @@ class Weapon {
 public:
 	NPC* parent;
 	float velocity, cooldown;
-	Weapon() = default;
+	std::chrono::time_point<std::chrono::system_clock> lastshot;
+	Weapon();
 	void setParent(NPC* parent);
+	bool canShoot();
 	virtual std::vector<Projectile*> shoot(Game* game) = 0;
 };
 
@@ -19,12 +22,13 @@ public:
 	std::vector<Projectile*> shoot(Game* game) override;
 };
 
-class Pistol : public Weapon {
+class Shotgun : public Weapon {
 public:
+	int fragmentsCount = 5;
 	std::vector<Projectile*> shoot(Game* game) override;
 };
 
-class Shotgun : public Weapon {
+class Pistol : public Weapon {
 public:
 	std::vector<Projectile*> shoot(Game* game) override;
 };

@@ -96,6 +96,8 @@ void Shader::GetUniforms()
 
     loc_color = GetUniformLocation("color");
     loc_layer = GetUniformLocation("layer");
+    loc_offset = GetUniformLocation("offset");
+    loc_scale = GetUniformLocation("scale");
 
     char buffer[64];
 

@@ -1,12 +1,15 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "Movable/Entity.h"
+#include "Objects/Entity.h"
+#include "Gui/Minimap.h"
 
 class Game : public gfxc::SimpleScene
 {
+    friend class Pistol; 
+    friend class Shotgun;
+    friend class Minimap;
 public:
-    Game();
     ~Game() override;
 
     void Init() override;
@@ -16,6 +19,9 @@ public:
     std::vector<NPC*> enemies;
     std::vector<Entity*> props;
     std::vector<Projectile*> projectiles;
+    std::vector<Entity*> mapBarriers;
+    Minimap* minimap;
+    glm::vec2 playAreaScale;
 
 private:
     void FrameStart() override;
@@ -30,4 +36,7 @@ private:
     void OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) override;
     void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
     void OnWindowResize(int width, int height) override;
+    
+    void checkBulletCollision(float deltaTimeSeconds);
+    void spawnEnemy();
 };

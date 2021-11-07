@@ -8,6 +8,5 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    // TODO replace with color uniform
     out_color = vec4(color, 1);
 }

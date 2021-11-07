@@ -69,8 +69,8 @@ class Shader
     // Text
     GLint text_color;
 
-    // 
-    GLint loc_color, loc_layer;
+    // HW1 uniforms
+    GLint loc_color, loc_layer, loc_offset, loc_scale;
 
 
  private:
