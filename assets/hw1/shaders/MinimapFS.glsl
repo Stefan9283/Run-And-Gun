@@ -2,7 +2,6 @@
 
 // Uniform properties
 uniform vec3 color;
-uniform float layer;
 
 // Output
 layout(location = 0) out vec4 out_color;

@@ -22,8 +22,6 @@ void Minimap::Render(Shader* shader) {
 
     auto camera = game->GetSceneCamera();
     camera->SetOrthographic(-(float)resolution.x, (float)resolution.x, -(float)resolution.y, (float)resolution.y, 0.01f, 400);
-    
-
 
     for (auto prop : game->props)
         prop->Render(shader, game->GetSceneCamera());
@@ -33,6 +31,9 @@ void Minimap::Render(Shader* shader) {
         en->setDirection(game->player->getPosition() - en->getPosition());
     }
     
+    if (game->pickup)
+        game->pickup->Render(shader, game->GetSceneCamera());
+
     game->player->Render(shader, game->GetSceneCamera());
 
     

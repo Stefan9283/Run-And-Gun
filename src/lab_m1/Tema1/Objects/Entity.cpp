@@ -46,14 +46,18 @@ void Entity::setCollider(Collider* col) {
 void Entity::goForward(float dt) {
     pos += velocity * dir * dt;
 }
+void Entity::avoidEntity(float dt, Entity* e) {
+    auto oldDirection = dir;
+    auto newDir = pos - e->getPosition();
+    setDirection(newDir);
+    goForward(dt);
+    setDirection(dir);
+}
 Collider* Entity::getCollider() {
     return collider;
 }
-void Entity::addMesh(Mesh* mesh, float layer, glm::vec3 color, glm::vec2 offset, float scale) {
-    meshes.push_back({ layer, scale, color, mesh, offset });
-    std::sort(meshes.begin(), meshes.end(), [](SubMesh& a, SubMesh& b) {
-        return a.layer > b.layer;
-    });
+void Entity::addMesh(Mesh* mesh, glm::vec3 color, glm::vec2 offset, glm::vec2 scale) {
+    meshes.push_back({ scale, color, mesh, offset });
 }
 void Entity::Render(Shader* s, gfxc::Camera* camera) {
     s->Use();
@@ -67,10 +71,9 @@ void Entity::Render(Shader* s, gfxc::Camera* camera) {
     glUniformMatrix4fv(s->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(T * R * S));
 
     for (auto &mesh : meshes) {
-        glUniform1f(s->loc_layer, mesh.layer);
         glUniform3f(s->loc_color, mesh.color.x, mesh.color.y, mesh.color.z);
         glUniform2f(s->loc_offset, mesh.offset.x, mesh.offset.y);
-        glUniform1f(s->loc_scale, mesh.scale);
+        glUniform2f(s->loc_scale, mesh.scale.x, mesh.scale.y);
         mesh.mesh->Render();
     }
 }
@@ -96,11 +99,16 @@ void NPC::addWeapon(Weapon* weapon) {
 int NPC::getHealth() {
     return health;
 }
+int NPC::getMaxHealth() {
+    return max_health;
+}
 void NPC::addHealth(int points) {
     health = glm::clamp(health + points, health, max_health);
 }
 std::vector<Projectile*> NPC::shoot(Game* game) {
-    return weapon->shoot(game);
+    if (health != 0)
+        return weapon->shoot(game);
+    return {};
 }
 #pragma endregion
 
@@ -140,7 +148,48 @@ void Enemy::onCollision(NPC* e) {
 
 void Player::onCollision(NPC* e) {
     if (dynamic_cast<Kamikaze*>(e)) {
-        health -= 3;
+        health = glm::max(health - 1, 0.f);
     }
 }
 
+void Player::onCollision(Projectile* p) {
+    // TODO
+}
+
+void Player::pickUp(PickUp* p) {
+    p->getPickedUp(this);
+}
+
+PickUp::~PickUp() {
+    if (type > 0) {
+        switch (type) {
+            case SHOTGUN_PICKUP:
+                delete (Shotgun*)item;
+                break;
+            case GUN_PICKUP:
+                delete (Pistol*)item;
+                break;
+        }
+    }
+}
+
+void PickUp::getPickedUp(Player* p) {
+    switch (type) {
+        case HEALTH_PICKUP:
+            p->addHealth(value);
+            break;
+        case SHOTGUN_PICKUP:
+            p->addWeapon((Weapon*)item);
+            break;
+        case GUN_PICKUP:
+            p->addWeapon((Weapon*)item);
+            break;
+        case COOLDOWN_PICKUP:
+            p->weapon->cooldown = value;
+            break;
+        case SPEED_PICKUP:
+            p->setVelocity(p->getVelocity() * value);
+            break;
+    }
+    type = - type;
+}

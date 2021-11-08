@@ -15,13 +15,15 @@ public:
     void Init() override;
 
     // TODO
-    NPC* player;
+    Player* player;
+    PickUp* pickup;
     std::vector<NPC*> enemies;
     std::vector<Entity*> props;
     std::vector<Projectile*> projectiles;
     std::vector<Entity*> mapBarriers;
     Minimap* minimap;
     glm::vec2 playAreaScale;
+    gfxc::Camera guiCamera;
 
 private:
     void FrameStart() override;
@@ -37,6 +39,8 @@ private:
     void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
     void OnWindowResize(int width, int height) override;
     
-    void checkBulletCollision(float deltaTimeSeconds);
+    void renderHealthBars();
+    void checkCollisions(float deltaTimeSeconds);
     void spawnEnemy();
+    void spawnPickUp();
 };

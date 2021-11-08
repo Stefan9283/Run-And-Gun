@@ -23,8 +23,8 @@ std::vector<Projectile*> Pistol::shoot(Game* game) {
 	auto bullet = new Projectile(this, 50);
 	bullet->setPosition(parent->getPosition());
 	bullet->setDirection(parent->getDirection());
-	bullet->addMesh(game->meshes["bullet"], 61, glm::vec3(0.18431372549), {}, 0.4);
-	bullet->addMesh(game->meshes["bullet"], 60, glm::vec3(0.984, 0.192, 0.035), {}, 0.3);
+	bullet->addMesh(game->meshes["bullet"], glm::vec3(0.18431372549), {}, glm::vec2(0.4));
+	bullet->addMesh(game->meshes["bullet"], glm::vec3(0.949, 0.941, 0.074), {}, glm::vec2(0.3));
 	bullet->setCollider(new Circle(0.5));
 	bullet->setVelocity(bullet->getVelocity() * 4.f);
 	lastshot = std::chrono::system_clock::now();
@@ -40,10 +40,10 @@ std::vector<Projectile*> Shotgun::shoot(Game* game) {
 		auto dir = glm::rotate(glm::mat4(1), glm::radians(-45 + i * 90.f / fragmentsCount), glm::vec3(0, 0, 1)) * glm::vec4(parDir, 0, 1);
 
 		auto bullet = new Projectile(this, 20);
-		bullet->setPosition(parent->getPosition());
+		bullet->setPosition(parent->getPosition() + parent->getDirection() * parent->getSize());
 		bullet->setDirection(dir);
-		bullet->addMesh(game->meshes["bullet"], 61, glm::vec3(0.18431372549), {}, 0.3);
-		bullet->addMesh(game->meshes["bullet"], 60, glm::vec3(0.725, 0.086, 0.274), {}, 0.2);
+		bullet->addMesh(game->meshes["bullet"], glm::vec3(0.18431372549), {}, glm::vec2(0.3));
+		bullet->addMesh(game->meshes["bullet"], glm::vec3(0.725, 0.086, 0.274), {}, glm::vec2(0.2));
 		bullet->setCollider(new Circle);
 		bullet->setVelocity(bullet->getVelocity() * 4.f);
 		proj.push_back(bullet);
