@@ -11,10 +11,9 @@ class Game : public gfxc::SimpleScene
     friend class Minimap;
 public:
     ~Game() override;
-
     void Init() override;
 
-    // TODO
+    float score;
     Player* player;
     PickUp* pickup;
     std::vector<NPC*> enemies;
@@ -40,7 +39,9 @@ private:
     void OnWindowResize(int width, int height) override;
     
     void renderHealthBars();
+    void displayGameOverToConsole();
     void checkCollisions(float deltaTimeSeconds);
     void spawnEnemy();
     void spawnPickUp();
+    void respawnPlayer();
 };

@@ -17,9 +17,9 @@ To generate a Windows solution or a Makefile use the provided CMakeLists.txt
 - [x] Direction change via mouse input
 - [x] AABB-Circle collision detection
 - [x] Camera on player
-- [ ] GUNS! GUNS! GUNS!
-- [ ] Score in terminal
-- [ ] Enemy classes (and their AI)
-- [ ] Healthbars
-- [ ] Pickups
-- [ ] Minimap
+- [x] GUNS! GUNS! GUNS!
+- [x] Score in terminal
+- [x] Enemy classes (and their AI)
+- [x] Healthbars
+- [x] Pickups
+- [x] Minimap

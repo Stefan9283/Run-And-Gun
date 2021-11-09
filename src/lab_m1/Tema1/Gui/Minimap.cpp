@@ -8,15 +8,15 @@ Minimap::Minimap(Game* game) {
 Minimap::~Minimap() {}
 
 void Minimap::Render(Shader* shader) {
-    glm::ivec2 resolution = game->window->GetResolution();
+    glm::vec2 resolution = game->window->GetResolution();
     
     //glViewport(0, 0, resolution.x / 5.f, resolution.y / 5.f);
-    glScissor(0, 0, resolution.x / 6.5f, resolution.y / 6.5f);
+    glScissor(0, 0, (int)(resolution.x / 6.5f), (int)(resolution.y / 6.5f));
     glClearColor(0, 0.047, 0.4, 1);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    glScissor(0, 0, resolution.x / 7.f, resolution.y / 7.f);
-    glViewport(0, 0, resolution.x / 7.f, resolution.y / 7.f);
+    glScissor(0, 0, (int)(resolution.x / 7.f), (int)(resolution.y / 7.f));
+    glViewport(0, 0, (int)(resolution.x / 7.f), (int)(resolution.y / 7.f));
     glClearColor(0, 0, 0, 1);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -34,12 +34,12 @@ void Minimap::Render(Shader* shader) {
     if (game->pickup)
         game->pickup->Render(shader, game->GetSceneCamera());
 
+    if (game->player->getHealth())
     game->player->Render(shader, game->GetSceneCamera());
 
     
     // Sets the screen area where to draw
-    glViewport(0, resolution.y, resolution.x, 0);
-    glScissor(0, 0, resolution.x, resolution.y);
+    glViewport(0, (int)resolution.y, (int)resolution.x, 0);
+    glScissor(0, 0, (int)resolution.x, (int)resolution.y);
     camera->SetOrthographic(-(float)resolution.x / 2, (float)resolution.x / 2, -(float)resolution.y / 2, (float)resolution.y / 2, 0.01f, 400);
-
 }

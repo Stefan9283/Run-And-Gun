@@ -50,7 +50,10 @@ void Entity::avoidEntity(float dt, Entity* e) {
     auto oldDirection = dir;
     auto newDir = pos - e->getPosition();
     setDirection(newDir);
+    auto oldVelocity = velocity;
+    setVelocity(oldVelocity * 1.5f);
     goForward(dt);
+    setVelocity(oldVelocity);
     setDirection(dir);
 }
 Collider* Entity::getCollider() {
@@ -84,41 +87,50 @@ bool Entity::checkCollision(Entity* e) {
 #pragma endregion
 
 #pragma region NPC
-NPC::NPC(glm::vec2 pos) {
+NPC::NPC(glm::vec2 pos, int type) {
     setPosition(pos);
+    this->type = type;
     weapon = nullptr;
 }
 NPC::~NPC() {
     delete weapon;
 }
-void NPC::addWeapon(Weapon* weapon) {
+void NPC::setWeapon(Weapon* weapon) {
     delete this->weapon;
     this->weapon = weapon;
     weapon->setParent(this);
 }
-int NPC::getHealth() {
+Weapon* NPC::getWeapon() {
+    return weapon;
+}
+float NPC::getHealth() {
     return health;
 }
-int NPC::getMaxHealth() {
+float NPC::getMaxHealth() {
     return max_health;
 }
-void NPC::addHealth(int points) {
-    health = glm::clamp(health + points, health, max_health);
+void NPC::addHealth(float points) {
+    health = glm::clamp(health + points, 0.f, max_health);
+}
+int NPC::getType() {
+    return type;
 }
 std::vector<Projectile*> NPC::shoot(Game* game) {
-    if (health != 0)
+    if (health != 0 && weapon)
         return weapon->shoot(game);
     return {};
 }
 #pragma endregion
 
 #pragma region Projectile
-Projectile::Projectile(Weapon* parent, float remainingTime) {
+Projectile::Projectile(Weapon* weapon, float remainingTime) {
     this->remainingTime = remainingTime;
-    source = parent;
+    source = weapon;
+    source_npc = weapon->getOwner()->getType();
+
 }
-bool Projectile::isSource(NPC* e) {
-    return e->weapon == source;
+bool Projectile::getSourceType() {
+    return source_npc;
 }
 float Projectile::getRemainingTime() {
     return remainingTime;
@@ -129,37 +141,45 @@ void Projectile::decrementRemainingTime(float dt) {
 void Projectile::setDamage(float damage) {
     this->damage = damage;
 }
-int Projectile::getDamage() {
+float Projectile::getDamage() {
     return damage;
 }
 #pragma endregion
 
 #pragma region Enemy
 void Enemy::onCollision(Projectile* p) {
-    if (!p->isSource(this))
-        health -= p->getDamage();
+    if (!p->getSourceType())
+        addHealth(-p->getDamage());
 }
 void Enemy::onCollision(NPC* e) {
     if (dynamic_cast<Player*>(e)) {
-        health = 0;
+        addHealth(- getHealth());
     }
 };
 #pragma endregion
 
+#pragma region Player
 void Player::onCollision(NPC* e) {
-    if (dynamic_cast<Kamikaze*>(e)) {
-        health = glm::max(health - 1, 0.f);
+    switch (e->getType())
+    {
+    case KAMIKAZE_TYPE:
+        addHealth(-3);
+    case GUNNER_TYPE:
+        addHealth(-1);
+    default:
+        break;
     }
 }
-
 void Player::onCollision(Projectile* p) {
-    // TODO
+    if (p->getSourceType() != PLAYER_TYPE)
+        addHealth(- p->getDamage());
 }
-
 void Player::pickUp(PickUp* p) {
     p->getPickedUp(this);
 }
+#pragma endregion
 
+#pragma region PickUp
 PickUp::~PickUp() {
     if (type > 0) {
         switch (type) {
@@ -172,20 +192,21 @@ PickUp::~PickUp() {
         }
     }
 }
-
 void PickUp::getPickedUp(Player* p) {
     switch (type) {
         case HEALTH_PICKUP:
             p->addHealth(value);
             break;
         case SHOTGUN_PICKUP:
-            p->addWeapon((Weapon*)item);
+            ((Weapon*)item)->setColor({ 0.725, 0.086, 0.274 });
+            p->setWeapon((Weapon*)item);
             break;
         case GUN_PICKUP:
-            p->addWeapon((Weapon*)item);
+            ((Weapon*)item)->setColor({ 0.949, 0.941, 0.074 });
+            p->setWeapon((Weapon*)item);
             break;
         case COOLDOWN_PICKUP:
-            p->weapon->cooldown = value;
+            p->getWeapon()->cooldown = value;
             break;
         case SPEED_PICKUP:
             p->setVelocity(p->getVelocity() * value);
@@ -193,3 +214,4 @@ void PickUp::getPickedUp(Player* p) {
     }
     type = - type;
 }
+#pragma endregion

@@ -1,5 +1,6 @@
-#include "Game.h"
+#include <lab_m1/lab3/object2D.h>
 #include <iostream>
+#include "Game.h"
 #include "Colliders/Collider.h"
 #include "Colors.h"
 
@@ -44,11 +45,78 @@ void Game::Init() {
         meshes[mesh->GetMeshID()] = mesh;
     }
     {
-        Mesh* mesh = new Mesh("quad_wire");
-        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::HW1, "models"), "quad_wireframe.obj");
+        std::vector<VertexFormat> vertices =
+        {
+            VertexFormat(glm::vec3(-1, -1,0)),
+            VertexFormat(glm::vec3(-1, 1, 0)),
+            VertexFormat(glm::vec3(1, 1, 0)),
+            VertexFormat(glm::vec3(1, -1, 0))
+        };
+
+        Mesh* mesh = new Mesh("square");
+        std::vector<unsigned int> indices = { 0, 1, 2, 3 };
+        mesh->SetDrawMode(GL_LINE_LOOP);
+        mesh->InitFromData(vertices, indices);
         meshes[mesh->GetMeshID()] = mesh;
     }
-    
+
+
+
+    pickup = nullptr;
+    score = 0;
+    {
+        player = new Player({ 0, 0 });
+        // torso
+        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, {}, glm::vec2(1.2f));
+        player->addMesh(meshes["circle"], { 0.078, 0.364, 0.627 });
+        // eyes
+        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, { -0.75, -0.55 }, glm::vec2(0.65f));
+        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, { 0.75, -0.55 }, glm::vec2(0.65f));
+        player->addMesh(meshes["circle"], { 0.180, 0.545, 0.752 }, { -0.75, -0.55 }, glm::vec2(0.5f));
+        player->addMesh(meshes["circle"], { 0.180, 0.545, 0.752 }, { 0.75, -0.55 }, glm::vec2(0.5f));
+
+        player->setCollider(new Circle);
+        player->setSize(glm::vec2(50));
+        auto gun = new Shotgun;
+        gun->setColor({ 0.949, 0.941, 0.074 });
+        player->setWeapon(gun);
+        player->setVelocity(player->getVelocity() * 1.5f);
+    }
+
+    //{
+    ////https://colorhunt.co/palette/125c133e7c17f4a442e8e1d9
+    ////https://colorhunt.co/palette/000000aa14f0bc8cf2eeeeee
+    ////https://colorhunt.co/palette/2f86a634be822fdd92f2f013
+    ////https://colorhunt.co/palette/0000001500503f0071610094
+    //    NPC* e = new NPC({ -100, 100 });
+    //    // eyes
+    //    e->addMesh(meshes["quad"], 46, {}, { -0.75, -0.65 }, 0.65f);
+    //    e->addMesh(meshes["quad"], 46, {}, { 0.75, -0.65 }, 0.65f);
+    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { -0.75, -0.65 }, 0.5f);
+    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { 0.75, -0.65 }, 0.5f); 
+    //    // torso
+    //    e->addMesh(meshes["quad"], 48, {}, {}, 1.2f);
+    //    e->addMesh(meshes["quad"], 47, { 0.247059, 0, 0.443137 });
+    //    e->setCollider(new AABB);
+    //    e->setSize(glm::vec2(50));
+    //    enemies.emplace_back(e);
+    //}
+    //{
+    //    NPC* e = new NPC({ 100, 100 });
+    //    // torso
+    //    e->addMesh(meshes["circle"], 51, {}, {}, 1.2f);
+    //    e->addMesh(meshes["circle"], 50, { 0.313, 0.062, 0.003 });
+    //    // eyes
+    //    e->addMesh(meshes["circle"], 50, {}, { -0.75, -0.65 }, 0.65f);
+    //    e->addMesh(meshes["circle"], 50, {}, { 0.75, -0.65 }, 0.65f);
+    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { -0.75, -0.65 }, 0.5f);
+    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { 0.75, -0.65 }, 0.5f);
+    //    e->setCollider(new AABB);
+    //    e->setSize(glm::vec2(50));
+    //    enemies.emplace_back(e);
+    //}
+
+
     {
         playAreaScale = glm::vec2(3000, 4000);
 
@@ -83,67 +151,38 @@ void Game::Init() {
         mapBarriers.push_back(barrierD);
     }
 
-    {
-        auto prop = new Entity(glm::vec2(100, 200));
-        prop->addMesh(meshes["quad"], { 0.423, 0.4, 0.921 });
-        prop->setSize(glm::vec2(100));
-        prop->setCollider(new AABB);
-        prop->setSize({ 100, 100 });
-        props.emplace_back(prop);
+
+    for (int i = 0; i < 20; i++) {
+        while (true) {
+            glm::vec2 size, pos;
+            pos = glm::vec2(rand() % 100, rand() % 100) / 100.f * playAreaScale - playAreaScale / 2.f;
+            size = glm::vec2(rand() % 100, rand() % 100) / 100.f * 100.f + glm::vec2(100.f);
+
+
+            auto obstacle = new Entity(pos); 
+            obstacle->setCollider(new AABB);
+            obstacle->setSize(size);
+            obstacle->addMesh(meshes["quad"], { 0.423, 0.4, 0.921 });
+          
+            if (player->checkCollision(obstacle)) {
+                delete obstacle;
+                continue; 
+            }
+            bool overlap = false;
+            for (auto prop : props)
+                if (prop->checkCollision(obstacle)) {
+                    overlap = true;
+                    break;
+                }
+            if (overlap) {
+                delete obstacle;
+                continue;
+            }
+
+            props.emplace_back(obstacle);
+            break;
+        }
     }
-   
-    pickup = nullptr;
-
-    {
-        player = new Player({ 0, 0 });
-        // torso
-        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, {}, glm::vec2(1.2f));
-        player->addMesh(meshes["circle"], { 0.078, 0.364, 0.627 });
-        // eyes
-        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, { -0.75, -0.55 }, glm::vec2(0.65f));
-        player->addMesh(meshes["circle"], { 0.047, 0.176, 0.282 }, {  0.75, -0.55 }, glm::vec2(0.65f));
-        player->addMesh(meshes["circle"], { 0.180, 0.545, 0.752 }, { -0.75, -0.55 }, glm::vec2(0.5f));
-        player->addMesh(meshes["circle"], { 0.180, 0.545, 0.752 }, {  0.75, -0.55 }, glm::vec2(0.5f));
-
-        player->setCollider(new Circle);
-        player->setSize(glm::vec2(50));
-        player->addWeapon(new Shotgun);
-        player->setVelocity(player->getVelocity() * 1.5f);
-    }
-
-    //{
-    ////https://colorhunt.co/palette/125c133e7c17f4a442e8e1d9
-    ////https://colorhunt.co/palette/000000aa14f0bc8cf2eeeeee
-    ////https://colorhunt.co/palette/2f86a634be822fdd92f2f013
-    ////https://colorhunt.co/palette/0000001500503f0071610094
-    //    NPC* e = new NPC({ -100, 100 });
-    //    // eyes
-    //    e->addMesh(meshes["quad"], 46, {}, { -0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["quad"], 46, {}, { 0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { -0.75, -0.65 }, 0.5f);
-    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { 0.75, -0.65 }, 0.5f); 
-    //    // torso
-    //    e->addMesh(meshes["quad"], 48, {}, {}, 1.2f);
-    //    e->addMesh(meshes["quad"], 47, { 0.247059, 0, 0.443137 });
-    //    e->setCollider(new AABB);
-    //    e->setSize(glm::vec2(50));
-    //    enemies.emplace_back(e);
-    //}
-
-    //{
-    //    NPC* e = new NPC({ 100, 100 });
-    //    // torso
-    //    e->addMesh(meshes["circle"], 51, {}, {}, 1.2f);
-    //    e->addMesh(meshes["circle"], 50, { 0.313, 0.062, 0.003 });
-    //    // eyes
-    //    e->addMesh(meshes["circle"], 50, {}, { -0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["circle"], 50, {}, { 0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { -0.75, -0.65 }, 0.5f);
-    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { 0.75, -0.65 }, 0.5f);
-    //    e->setCollider(new AABB);
-    //    e->setSize(glm::vec2(50));
-    //    enemies.emplace_back(e);
-    //}
 
     {
         Shader* shader = new Shader("SimpleColor");
@@ -164,8 +203,9 @@ void Game::Init() {
 }
 void Game::Update(float deltaTimeSeconds) {
     checkCollisions(deltaTimeSeconds);
-    //spawnEnemy();
+    spawnEnemy();
     spawnPickUp();
+
     for (auto prop : props)
         prop->Render(shaders["SimpleColor"], GetSceneCamera());
     for (auto barrier : mapBarriers)
@@ -178,7 +218,6 @@ void Game::Update(float deltaTimeSeconds) {
         proj->goForward(deltaTimeSeconds);
         proj->Render(shaders["SimpleColor"], GetSceneCamera());
     }
-
 
     for (auto en : enemies) {
         {
@@ -195,21 +234,33 @@ void Game::Update(float deltaTimeSeconds) {
                 en->avoidEntity(deltaTimeSeconds / 2, closestProj);
         }
         en->setDirection(player->getPosition() - en->getPosition());
-        if (player->getHealth() != 0)
+        if (player->getHealth() != 0) {
             en->goForward(deltaTimeSeconds);
+            auto bullets = en->shoot(this);
+            projectiles.insert(projectiles.end(), bullets.begin(), bullets.end());
+        }
 
         en->Render(shaders["SimpleColor"], GetSceneCamera());
     }
 
-    if (pickup)
+    if (pickup) {
         pickup->Render(shaders["SimpleColor"], GetSceneCamera());
+        if (glm::length(pickup->getPosition() - player->getPosition()) > 1000) {
+            delete pickup;
+            pickup = nullptr;
+        }
 
+    }
     renderHealthBars();
     minimap->Render(shaders["SimpleColor"]);
 }
 void Game::OnInputUpdate(float deltaTime, int mods) {
-    if (player->getHealth() == 0) return;
-    
+    if (player->getHealth() == 0) {
+        if (window->KeyHold(GLFW_KEY_R))
+            respawnPlayer();
+       else return;
+    }
+
     // if WASD check collision
     {
         auto pos = player->getPosition();
@@ -302,7 +353,6 @@ glm::vec3 getHealthBarColor(float healthRatio) {
     }
     return color;
 }
-
 void Game::renderHealthBars() {
     glm::vec2 resolution = window->GetResolution();
 
@@ -330,7 +380,7 @@ void Game::renderHealthBars() {
         auto color = getHealthBarColor(healthRatio);
         glUniform3f(shader->loc_color, color.x, color.y, color.z);
 
-        meshes["quad_wire"]->Render();
+        meshes["square"]->Render();
 
         model =
             glm::translate(glm::mat4(1), glm::vec3(position.x - size.x, position.y + 2.5f * size.y, 0)) *
@@ -358,7 +408,7 @@ void Game::renderHealthBars() {
                 glm::scale(glm::mat4(1), glm::vec3(2 * resolution.x, resolution.y / 100, 1)) *
                 glm::translate(glm::mat4(1), glm::vec3(1, -1, 0))
             ));
-        meshes["quad_wire"]->Render();
+        meshes["square"]->Render();
 
         auto model =
             glm::translate(glm::mat4(1), glm::vec3(-resolution.x / 2, resolution.y / 2, 0)) *
@@ -374,16 +424,23 @@ void Game::renderHealthBars() {
     
 
 }
+void Game::displayGameOverToConsole() {
+    std::cout << "########################### GAME OVER ###########################\n";
+    std::cout << "                       Final Score " << score << "\n";
+    std::cout << "########################### GAME OVER ###########################\n";
+}
 void Game::checkCollisions(float deltaTimeSeconds) {
     for (int i = projectiles.size() - 1; i >= 0; i--) {
         auto proj = projectiles[i];
         bool collided = false;
-        if (!proj->isSource(player) && proj->checkCollision(player)) {
+        if (player->getHealth() && proj->getSourceType() != PLAYER_TYPE && proj->checkCollision(player)) {
             player->onCollision(proj);
+            if (player->getHealth())
+                displayGameOverToConsole();
             collided = true;
         } else {
             for (int i = enemies.size() - 1; i >= 0; i--)
-                if (!proj->isSource(enemies[i]) && enemies[i]->checkCollision(proj)) {
+                if (proj->getSourceType() == PLAYER_TYPE && enemies[i]->checkCollision(proj)) {
                     enemies[i]->onCollision(proj);
                     collided = true;
                     break;
@@ -420,8 +477,11 @@ void Game::checkCollisions(float deltaTimeSeconds) {
     }
 
     for (int i = enemies.size() - 1; i >= 0; i--) {
-        if (enemies[i]->getHealth() <= 0)
+        if (enemies[i]->getHealth() <= 0) {
+            score += enemies[i]->getType();
+            delete enemies[i];
             enemies.erase(enemies.begin() + i);
+        }
     }
 
     if (pickup && pickup->checkCollision(player)) {
@@ -432,21 +492,52 @@ void Game::checkCollisions(float deltaTimeSeconds) {
 }
 void Game::spawnEnemy() {
     if (enemies.size() > 5) return;
-
     glm::vec2 dir = glm::rotate(glm::mat4(1), glm::radians((float)(rand() % 360)), glm::vec3(0, 0, 1)) * glm::vec4(0, -1, 0, 1);
     float distance = rand() % 100 + 1000;
     glm::vec2 pos = player->getPosition() + dir * distance;
-    if (-playAreaScale.x < pos.x && pos.x < playAreaScale.x &&
-        -playAreaScale.y < pos.y && pos.y < playAreaScale.y) {
-        NPC* e = new Kamikaze({ pos });
+    if (- playAreaScale.x < pos.x && pos.x < playAreaScale.x &&
+        - playAreaScale.y < pos.y && pos.y < playAreaScale.y) {
+        NPC* e;
+
+        glm::vec3 colorDark;
+        glm::vec3 colorLight;
+
+        int type = rand() % 3;
+
+        switch (type) {
+            case 0:
+                colorDark = { 0.247059, 0, 0.443137 };
+                colorLight = { 0.380392, 0, 0.580392 };
+                e = new Kamikaze({ pos });
+                break;
+            case 1: {
+                colorDark = { 0.490, 0.098, 0.207 };
+                colorLight = { 0.901, 0.243, 0.427 };
+                auto weapon = new Shotgun;
+                weapon->setColor(colorLight);
+                weapon->setFramentsCount(4);
+                weapon->cooldown = 5000;
+                e = new Gunner({ pos }, weapon);
+            }
+            case 2:
+            default: {
+                colorDark = { 0.243, 0.486, 0.090 };
+                colorLight = { 0.956, 0.643, 0.258 };
+                auto weapon = new Pistol;
+                weapon->setColor(colorLight);
+                weapon->cooldown = 5000;
+                e = new Gunner({ pos }, weapon);
+            }
+        }
+
         // torso
         e->addMesh(meshes["quad"], {}, {}, glm::vec2(1.2f));
-        e->addMesh(meshes["quad"], { 0.247059, 0, 0.443137 });
+        e->addMesh(meshes["quad"], colorDark);
         // eyes
         e->addMesh(meshes["quad"], {}, { -0.75, -0.65 }, glm::vec2(0.65f));
         e->addMesh(meshes["quad"], {}, { 0.75, -0.65 }, glm::vec2(0.65f));
-        e->addMesh(meshes["quad"], { 0.380392, 0, 0.580392 }, { -0.75, -0.65 }, glm::vec2(0.5f));
-        e->addMesh(meshes["quad"], { 0.380392, 0, 0.580392 }, { 0.75, -0.65 }, glm::vec2(0.5f));
+        e->addMesh(meshes["quad"], colorLight, { -0.75, -0.65 }, glm::vec2(0.5f));
+        e->addMesh(meshes["quad"], colorLight, { 0.75, -0.65 }, glm::vec2(0.5f));
 
         e->setVelocity(e->getVelocity() * 0.5);
         e->setCollider(new AABB);
@@ -456,9 +547,9 @@ void Game::spawnEnemy() {
 }
 void Game::spawnPickUp() {
     if (pickup) return;
-
+    
     glm::vec2 dir = glm::rotate(glm::mat4(1), glm::radians((float)(rand() % 360)), glm::vec3(0, 0, 1)) * glm::vec4(0, -1, 0, 1);
-    float distance = rand() % 100 + 100;
+    float distance = rand() % 100 + 500;
     glm::vec2 pos = player->getPosition() + dir * distance;
 
     int type = rand() % 5;
@@ -525,4 +616,9 @@ void Game::spawnPickUp() {
         delete pickup;
         pickup = nullptr;
     }
+}
+
+void Game::respawnPlayer() {
+    player->addHealth(player->getMaxHealth());
+    score = 0;
 }

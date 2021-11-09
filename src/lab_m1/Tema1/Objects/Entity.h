@@ -19,7 +19,7 @@ class Entity {
 private:
     glm::vec2 pos{}, dir{ 0, -1}, scale{ 50, 50 };
     std::vector<SubMesh> meshes;
-    float velocity = 300.f;
+    float velocity = 400.f;
     Collider* collider = nullptr;
 public:
     Entity(glm::vec2 pos = {});
@@ -53,50 +53,68 @@ class Projectile : public Entity {
     Weapon* source;
     float remainingTime;
     float damage = 1;
+    int source_npc;
 public:
     Projectile(Weapon* parent, float remainingTime);
-    bool isSource(NPC* e);
+    bool getSourceType();
+
     float getRemainingTime();
     void decrementRemainingTime(float dt);
     void setDamage(float damage);
-    int getDamage();
+    float getDamage();
 };
 
 class NPC : public Entity {
-public:
     Weapon* weapon;
+    int type = -1;
     float health = 10, max_health = 10;
-    NPC(glm::vec2 pos);
+public:
+    NPC(glm::vec2 pos, int type);
     ~NPC();
     
     virtual void onCollision(Projectile* p) {};
     virtual void onCollision(Entity* e) {};
     virtual void onCollision(NPC* e) {};
-    int getHealth();
-    int getMaxHealth();
-    void addHealth(int points);
+
+    float getHealth();
+    float getMaxHealth();
+    void addHealth(float points);
+
+    int getType();
+
     std::vector<Projectile*> shoot(Game* game);
-    void addWeapon(Weapon* weapon);
+    void setWeapon(Weapon* weapon);
+    Weapon* getWeapon();
 };
 
+#define PLAYER_TYPE 0
+#define KAMIKAZE_TYPE 1
+#define GUNNER_TYPE 2
 
 class Enemy : public NPC {
 public:
-    Enemy(glm::vec2 pos) : NPC(pos) {};
+    Enemy(glm::vec2 pos, int type) : NPC(pos, type) {};
     void onCollision(Projectile* p) override;
     void onCollision(NPC* e) override;
 };
 
 class Kamikaze : public Enemy {
 public:
-    Kamikaze(glm::vec2 pos) : Enemy(pos) {};
+    Kamikaze(glm::vec2 pos) : Enemy(pos, KAMIKAZE_TYPE) {};
+};
+
+class Gunner : public Enemy {
+public:
+    Gunner(glm::vec2 pos, Weapon* weapon) : Enemy(pos, GUNNER_TYPE) {
+        setWeapon(weapon);
+    };
 };
 
 class PickUp;
 
 class Player : public NPC {
 public:
-    Player(glm::vec2 pos) : NPC(pos) {};
+    Player(glm::vec2 pos) : NPC(pos, PLAYER_TYPE) {};
     void onCollision(NPC* e) override;
     void onCollision(Projectile* p) override;
     void pickUp(PickUp* p);
@@ -112,14 +130,14 @@ public:
 class PickUp : public Entity {
 public:
     void* item = nullptr;
-    int value = 0;
+    float value = 0;
     int type = 0;
     
     PickUp(glm::vec2 pos, int type) : Entity(pos) {
         this->type = type;
         switch (type) {
             case HEALTH_PICKUP:
-                value = rand() % 3 * 3;
+                value = rand() % 3 * 3.f;
                 break;
             case SHOTGUN_PICKUP:
                 item = new Shotgun;
@@ -128,10 +146,10 @@ public:
                 item = new Pistol;
                 break;
             case COOLDOWN_PICKUP:
-                value = (1 + rand() % 4) * 100;
+                value = (1 + rand() % 4) * 100.f;
                 break;
             case SPEED_PICKUP:
-                value = 1 / (1 + rand() % 10) + 1;
+                value = 1.f / (1 + rand() % 10) + 1.f;
                 break;
         } 
     }
