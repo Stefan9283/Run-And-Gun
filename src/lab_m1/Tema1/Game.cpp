@@ -152,10 +152,10 @@ void Game::Init() {
     }
 
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 60; i++) {
         while (true) {
             glm::vec2 size, pos;
-            pos = glm::vec2(rand() % 100, rand() % 100) / 100.f * playAreaScale - playAreaScale / 2.f;
+            pos = (glm::vec2(rand() % 100, rand() % 100) - glm::vec2(50)) / 60.f * playAreaScale;
             size = glm::vec2(rand() % 100, rand() % 100) / 100.f * 100.f + glm::vec2(100.f);
 
 
@@ -207,16 +207,16 @@ void Game::Update(float deltaTimeSeconds) {
     spawnPickUp();
 
     for (auto prop : props)
-        prop->Render(shaders["SimpleColor"], GetSceneCamera());
+        prop->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
     for (auto barrier : mapBarriers)
-        barrier->Render(shaders["SimpleColor"], GetSceneCamera());
+        barrier->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
     
     if (player->getHealth() != 0)
-        player->Render(shaders["SimpleColor"], GetSceneCamera());
+        player->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
     
     for (auto proj : projectiles) {
         proj->goForward(deltaTimeSeconds);
-        proj->Render(shaders["SimpleColor"], GetSceneCamera());
+        proj->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
     }
 
     for (auto en : enemies) {
@@ -230,8 +230,10 @@ void Game::Update(float deltaTimeSeconds) {
                     closestProj = proj;
                 }
             }
-            if (closestProj)
-                en->avoidEntity(deltaTimeSeconds / 2, closestProj);
+            if (closestProj) {
+                
+                en->avoidEntity(deltaTimeSeconds / 2, closestProj, mapBarriers);
+            }
         }
         en->setDirection(player->getPosition() - en->getPosition());
         if (player->getHealth() != 0) {
@@ -240,11 +242,11 @@ void Game::Update(float deltaTimeSeconds) {
             projectiles.insert(projectiles.end(), bullets.begin(), bullets.end());
         }
 
-        en->Render(shaders["SimpleColor"], GetSceneCamera());
+        en->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
     }
 
     if (pickup) {
-        pickup->Render(shaders["SimpleColor"], GetSceneCamera());
+        pickup->Render(shaders["SimpleColor"], GetSceneCamera(), zoom);
         if (glm::length(pickup->getPosition() - player->getPosition()) > 1000) {
             delete pickup;
             pickup = nullptr;
@@ -331,8 +333,12 @@ void Game::FrameStart()
 }
 void Game::FrameEnd() {}
 void Game::OnWindowResize(int width, int height) {
+    
     glm::ivec2 halfresolution = window->GetResolution() / 2;
     auto camera = GetSceneCamera();
+
+    glm::ivec2 resRatio = halfresolution / glm::ivec2(640, 360);
+    zoom = MAX(resRatio.x, resRatio.y);
 
     camera->SetOrthographic(-(float)halfresolution.x, (float)halfresolution.x, -(float)halfresolution.y, (float)halfresolution.y, 0.01f, 400);
     camera->Update();
@@ -359,9 +365,8 @@ void Game::renderHealthBars() {
     auto shader = shaders["SimpleColor"];
     shader->Use();
     
-
     // Enemy HealthBar
-    glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(GetSceneCamera()->GetViewMatrix()));
+    glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(glm::scale(glm::mat4(1), glm::vec3(zoom, zoom, 1)) * GetSceneCamera()->GetViewMatrix()));
     glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(GetSceneCamera()->GetProjectionMatrix()));
     glUniform2f(shader->loc_offset, 0, 0);
     glUniform2f(shader->loc_scale, 1, 1);
@@ -435,7 +440,7 @@ void Game::checkCollisions(float deltaTimeSeconds) {
         bool collided = false;
         if (player->getHealth() && proj->getSourceType() != PLAYER_TYPE && proj->checkCollision(player)) {
             player->onCollision(proj);
-            if (player->getHealth())
+            if (player->getHealth() <= 0)
                 displayGameOverToConsole();
             collided = true;
         } else {
@@ -462,6 +467,7 @@ void Game::checkCollisions(float deltaTimeSeconds) {
         }
 
         if (collided || proj->getRemainingTime() <= -1) {
+            delete projectiles[i];
             projectiles.erase(projectiles.begin() + i);
             continue;
         }
@@ -497,12 +503,12 @@ void Game::spawnEnemy() {
     glm::vec2 pos = player->getPosition() + dir * distance;
     if (- playAreaScale.x < pos.x && pos.x < playAreaScale.x &&
         - playAreaScale.y < pos.y && pos.y < playAreaScale.y) {
-        NPC* e;
+        Enemy* e;
 
         glm::vec3 colorDark;
         glm::vec3 colorLight;
 
-        int type = rand() % 3;
+        int type = rand() % 2;
 
         switch (type) {
             case 0:
@@ -518,6 +524,7 @@ void Game::spawnEnemy() {
                 weapon->setFramentsCount(4);
                 weapon->cooldown = 5000;
                 e = new Gunner({ pos }, weapon);
+                break;
             }
             case 2:
             default: {
@@ -527,6 +534,7 @@ void Game::spawnEnemy() {
                 weapon->setColor(colorLight);
                 weapon->cooldown = 5000;
                 e = new Gunner({ pos }, weapon);
+                break;
             }
         }
 
@@ -597,15 +605,13 @@ void Game::spawnPickUp() {
         case SPEED_PICKUP:
             pickup->addMesh(meshes["circle"], glm::vec3(0.196, 0.756, 0.803), {}, glm::vec2(1.2f));
             pickup->addMesh(meshes["circle"], { 0.090, 0.843, 0.627 });
-            for (int i = 0; i < 3; i++) {
+            for (float i = 0; i < 3; i++) {
                 float step = 0.3f;
-                pickup->addMesh(meshes["quad"], glm::vec3(0.196, 0.756, 0.803), { -0.5 + step * i,   0.15 - step * i }, glm::vec2(0.1, 0.3));
-                pickup->addMesh(meshes["quad"], glm::vec3(0.196, 0.756, 0.803), { -0.25 + step * i,   0.4 - step * i }, glm::vec2(0.3, 0.1));
+                pickup->addMesh(meshes["quad"], glm::vec3(0.196f, 0.756f, 0.803f), { -0.50f + step * i, 0.15f - step * i }, glm::vec2(0.1f, 0.3f));
+                pickup->addMesh(meshes["quad"], glm::vec3(0.196f, 0.756f, 0.803f), { -0.25f + step * i, 0.40f - step * i }, glm::vec2(0.3f, 0.1f));
             }
             pickup->setDirection({ -1, 1 });
-
             break;
-            // TODO
         default:
             pickup->addMesh(meshes["circle"], glm::vec3(0), {}, glm::vec2(1.2f));
             pickup->addMesh(meshes["circle"], { 1, 0, 0 });
@@ -617,7 +623,6 @@ void Game::spawnPickUp() {
         pickup = nullptr;
     }
 }
-
 void Game::respawnPlayer() {
     player->addHealth(player->getMaxHealth());
     score = 0;

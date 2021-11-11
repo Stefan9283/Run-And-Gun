@@ -33,7 +33,6 @@ public:
     
     void addToPosition(glm::vec2 displacement);
     void goForward(float dt);
-    void avoidEntity(float dt, Entity* e);
 
     void setDirection(glm::vec2 direction);
     glm::vec2 getDirection();
@@ -46,7 +45,7 @@ public:
     bool checkCollision(Entity* e);
 
     void addMesh(Mesh* mesh, glm::vec3 color, glm::vec2 offset = {}, glm::vec2 scale = { 1.f, 1.f });
-    void Render(Shader* s, gfxc::Camera* camera);
+    void Render(Shader* s, gfxc::Camera* camera, float zoom = 0.5f);
 };
 
 class Projectile : public Entity {
@@ -96,6 +95,7 @@ public:
     Enemy(glm::vec2 pos, int type) : NPC(pos, type) {};
     void onCollision(Projectile* p) override;
     void onCollision(NPC* e) override;
+    void avoidEntity(float dt, Entity* e, std::vector<Entity*> barriers);
 };
 
 class Kamikaze : public Enemy {

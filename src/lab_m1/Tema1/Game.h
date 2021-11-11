@@ -16,13 +16,14 @@ public:
     float score;
     Player* player;
     PickUp* pickup;
-    std::vector<NPC*> enemies;
+    std::vector<Enemy*> enemies;
     std::vector<Entity*> props;
     std::vector<Projectile*> projectiles;
     std::vector<Entity*> mapBarriers;
     Minimap* minimap;
     glm::vec2 playAreaScale;
     gfxc::Camera guiCamera;
+    float zoom = 0.5f;
 
 private:
     void FrameStart() override;

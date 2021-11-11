@@ -46,30 +46,21 @@ void Entity::setCollider(Collider* col) {
 void Entity::goForward(float dt) {
     pos += velocity * dir * dt;
 }
-void Entity::avoidEntity(float dt, Entity* e) {
-    auto oldDirection = dir;
-    auto newDir = pos - e->getPosition();
-    setDirection(newDir);
-    auto oldVelocity = velocity;
-    setVelocity(oldVelocity * 1.5f);
-    goForward(dt);
-    setVelocity(oldVelocity);
-    setDirection(dir);
-}
 Collider* Entity::getCollider() {
     return collider;
 }
 void Entity::addMesh(Mesh* mesh, glm::vec3 color, glm::vec2 offset, glm::vec2 scale) {
     meshes.push_back({ scale, color, mesh, offset });
 }
-void Entity::Render(Shader* s, gfxc::Camera* camera) {
+void Entity::Render(Shader* s, gfxc::Camera* camera, float zoom) {
     s->Use();
     
     glm::mat4 T = glm::translate(glm::mat4(1), glm::vec3(pos, 1));
     glm::mat4 R = glm::rotate(glm::mat4(1), glm::orientedAngle({ 0, -1 }, dir), glm::vec3(0, 0, 1));
     glm::mat4 S = glm::scale(glm::mat4(1), glm::vec3(scale, 1));
 
-    glUniformMatrix4fv(s->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetViewMatrix()));
+    glm::mat4 view = glm::scale(glm::mat4(1), glm::vec3(zoom, zoom, 1)) * camera->GetViewMatrix();
+    glUniformMatrix4fv(s->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(s->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetProjectionMatrix()));
     glUniformMatrix4fv(s->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(T * R * S));
 
@@ -156,6 +147,27 @@ void Enemy::onCollision(NPC* e) {
         addHealth(- getHealth());
     }
 };
+void Enemy::avoidEntity(float dt, Entity* e, std::vector<Entity*> barriers) {
+    auto oldDirection = getDirection();
+    auto oldPos = getPosition();
+    auto newDir = oldPos - e->getPosition();
+
+    setDirection(newDir);
+    auto oldVelocity = getVelocity();
+    setVelocity(oldVelocity * 2.5f);
+    goForward(dt);
+    setVelocity(oldVelocity);
+    setDirection(oldDirection);
+
+    bool collision = false;
+    for (auto b : barriers)
+        if (b->checkCollision(this)) {
+            collision = true;
+            break;
+        }
+    if (collision)
+        setPosition(oldPos);
+}
 #pragma endregion
 
 #pragma region Player
