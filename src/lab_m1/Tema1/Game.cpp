@@ -2,7 +2,6 @@
 #include <iostream>
 #include "Game.h"
 #include "Colliders/Collider.h"
-#include "Colors.h"
 
 Game::~Game() {
     for (auto* prop : props)
@@ -23,6 +22,14 @@ void Game::Init() {
     camera->SetRotation(glm::vec3(0, 0, 0));
     camera->Update();
     GetCameraInput()->SetActive(false);
+
+    {
+        glm::vec2 halfresolution = window->GetResolution() / 2;
+        auto camera = GetSceneCamera();
+
+        glm::vec2 resRatio = halfresolution / (glm::vec2(1280, 720) / 2.f);
+        zoom = MAX(resRatio.x, resRatio.y);
+    }
 
     guiCamera.SetPosition(glm::vec3(0, 0, 50));
     guiCamera.SetOrthographic(-(float)resolution.x / 2, (float)resolution.x / 2,
@@ -82,40 +89,6 @@ void Game::Init() {
         player->setWeapon(gun);
         player->setVelocity(player->getVelocity() * 1.5f);
     }
-
-    //{
-    ////https://colorhunt.co/palette/125c133e7c17f4a442e8e1d9
-    ////https://colorhunt.co/palette/000000aa14f0bc8cf2eeeeee
-    ////https://colorhunt.co/palette/2f86a634be822fdd92f2f013
-    ////https://colorhunt.co/palette/0000001500503f0071610094
-    //    NPC* e = new NPC({ -100, 100 });
-    //    // eyes
-    //    e->addMesh(meshes["quad"], 46, {}, { -0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["quad"], 46, {}, { 0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { -0.75, -0.65 }, 0.5f);
-    //    e->addMesh(meshes["quad"], 45, { 0.380392, 0, 0.580392 }, { 0.75, -0.65 }, 0.5f); 
-    //    // torso
-    //    e->addMesh(meshes["quad"], 48, {}, {}, 1.2f);
-    //    e->addMesh(meshes["quad"], 47, { 0.247059, 0, 0.443137 });
-    //    e->setCollider(new AABB);
-    //    e->setSize(glm::vec2(50));
-    //    enemies.emplace_back(e);
-    //}
-    //{
-    //    NPC* e = new NPC({ 100, 100 });
-    //    // torso
-    //    e->addMesh(meshes["circle"], 51, {}, {}, 1.2f);
-    //    e->addMesh(meshes["circle"], 50, { 0.313, 0.062, 0.003 });
-    //    // eyes
-    //    e->addMesh(meshes["circle"], 50, {}, { -0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["circle"], 50, {}, { 0.75, -0.65 }, 0.65f);
-    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { -0.75, -0.65 }, 0.5f);
-    //    e->addMesh(meshes["circle"], 49, { 0.815, 0, 0 }, { 0.75, -0.65 }, 0.5f);
-    //    e->setCollider(new AABB);
-    //    e->setSize(glm::vec2(50));
-    //    enemies.emplace_back(e);
-    //}
-
 
     {
         playAreaScale = glm::vec2(3000, 4000);
@@ -320,9 +293,8 @@ void Game::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods) {
     }
 }
 void Game::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) {}
-void Game::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) { /* maybe use to change player weapon? */ }
-void Game::FrameStart()
-{
+void Game::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) {}
+void Game::FrameStart() {
     // Clears the color buffer (using the previously set color) and depth buffer
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -334,11 +306,12 @@ void Game::FrameStart()
 void Game::FrameEnd() {}
 void Game::OnWindowResize(int width, int height) {
     
-    glm::ivec2 halfresolution = window->GetResolution() / 2;
+    glm::vec2 halfresolution = window->GetResolution() / 2;
     auto camera = GetSceneCamera();
 
-    glm::ivec2 resRatio = halfresolution / glm::ivec2(640, 360);
+    glm::vec2 resRatio = halfresolution / (glm::vec2(1280, 720) / 2.f);
     zoom = MAX(resRatio.x, resRatio.y);
+
 
     camera->SetOrthographic(-(float)halfresolution.x, (float)halfresolution.x, -(float)halfresolution.y, (float)halfresolution.y, 0.01f, 400);
     camera->Update();
