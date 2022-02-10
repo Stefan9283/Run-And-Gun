@@ -3,12 +3,21 @@
 
 3rd year 1st assignament for the Computer Graphics course.
 
-## How-To
+![Alt Text](demo.gif)
+
+## How-To-Build
 
 To generate a Windows solution or a Makefile use the provided CMakeLists.txt
 ```bash
     cmake -Bbuild
 ```
+
+## How-To-Play
+
+WASD for movement
+
+Left Mouse Button to shoot
+
 
 ## TODOs
 
